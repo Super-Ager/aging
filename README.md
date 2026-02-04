@@ -1,5 +1,3 @@
-# Protein Stability & Individual Specificity Analysis
-
 This repository contains R scripts for analyzing protein expression variance decomposition using mixed-effects models based on longitudinal SomaScan 11K proteomics data and trajectory modeling.
 
 ## Scripts Overview
@@ -42,3 +40,4 @@ Protein trajectory modeling and survival analysis. Uses longitudinal data to pre
 1. Update file paths in each script to match your data locations
 2. Ensure input data files are available
 3. Run scripts sequentially or independently based on your analysis needs
+
