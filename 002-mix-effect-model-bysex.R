@@ -10,10 +10,10 @@ options(warn = -1)
 # -------------------------------------------------------------------------
 # Paths
 # -------------------------------------------------------------------------
-soma_path <- '/home/ww/Project/Longi_OA/results/tony_model/soma_df_Age_Sex_F_Dataset.csv'
-anno_path <- '/home/ww/Project/AnzhenData/annoinfo_df_SOMA.csv'
+soma_path <- 'data/soma_df_Age_Sex_F_Dataset.csv'
+anno_path <- 'data/annoinfo_df_SOMA.csv'
 
-out_root <- '/home/ww/Project/Protein-Composition/result/1227-result-sex-separated'
+out_root <- 'results/1227-result-sex-separated'
 plot_dir_male <- file.path(out_root, 'png-protein-visit-batch-male')
 plot_dir_female <- file.path(out_root, 'png-protein-visit-batch-female')
 
@@ -25,8 +25,8 @@ dir.create(plot_dir_female, recursive = TRUE, showWarnings = FALSE)
 # Data loading + visit renaming
 # -------------------------------------------------------------------------
 soma_df <- read.csv(soma_path, stringsAsFactors = FALSE) %>%
-  filter(Dataset %in% c(1,2,3,4)) %>%
-  rename(visit = Dataset)
+  filter(Visit %in% c(1,2,3,4)) %>%
+  rename(visit = Visit)
 
 anno_df <- read.csv(anno_path, stringsAsFactors = FALSE)
 
