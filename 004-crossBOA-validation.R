@@ -12,7 +12,7 @@ library(ggrepel)
 # ===============================
 # 0. Path settings
 # ===============================
-output_dir <- "/home/ww/Project/Protein-Composition/result/000-横断面一致且显著的衰老"
+output_dir <- "results/000-cross-sectional-consistent-significant-aging"
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
@@ -26,7 +26,7 @@ cat("Output dir:", output_dir, "\n\n")
 # ===============================
 # 1. Load data
 # ===============================
-input_file <- "/home/ww/Project/Protein-Composition/result/1227-result/usa-iceland/merged_protein_tables.xlsx"
+input_file <- "results/1227-result/usa-iceland/merged_protein_tables.xlsx"
 cat("Reading merged table:\n", input_file, "\n")
 
 df <- read_excel(input_file)
@@ -46,7 +46,7 @@ df <- df %>%
 # ===============================
 # 2. Load annotation file and merge gene symbol
 # ===============================
-anno_path <- "/home/ww/Project/AnzhenData/annoinfo_df_SOMA.csv"
+anno_path <- "data/annoinfo_df_SOMA.csv"
 cat("Reading annotation:\n", anno_path, "\n")
 
 anno_df <- read.csv(anno_path, stringsAsFactors = FALSE) %>%
@@ -139,10 +139,10 @@ cat("Consistent significant proteins (p < 0.01):", nrow(consistent_df), "\n")
 cat("Unique gene symbols:", length(unique(consistent_df$EntrezGeneSymbol)), "\n\n")
 
 # ===============================
-# 6. 绘制显著且一致的top50图
+# 6. Plot top 50 significant and consistent proteins
 # ===============================
 
-# 获取top50蛋白
+# Get top 50 proteins
 top50 <- consistent_df %>% filter(rank_aging <= 10)
 cat("[Top 1-50 Consistent Proteins]\n")
 cat("Protein count:", nrow(top50), "\n")
@@ -205,13 +205,13 @@ p_top50 <- ggplot(plot_df,
     )
   ) +
   
-  # 坐标轴标签
+  # Axis labels
   labs(
     x = expression("Iceland β"[age]),
     y = expression("USA β"[age])
   ) +
   
-  # 主题设置
+  # Theme settings
   theme_classic() +
   theme(
     axis.title = element_text(size = font_axis, face = "bold"),
@@ -229,7 +229,7 @@ p_top50 <- ggplot(plot_df,
     plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
   ) +
   
-  # 坐标轴比例
+  # Axis scale
   coord_fixed(ratio = 3) +
   xlim(min(plot_df$iceland_beta_age, na.rm = TRUE) * 1.1,
        max(plot_df$iceland_beta_age, na.rm = TRUE) * 1.1) +
@@ -276,20 +276,20 @@ if (nrow(top51_100) > 0) {
   cat("Protein count:", nrow(top51_100), "\n")
   cat("Unique gene symbols:", length(unique(top51_100$EntrezGeneSymbol)), "\n\n")
   
-  # 创建top51-100标注图
+  # Create top 51-100 labeled plot
   p_top51_100 <- ggplot(plot_df, 
                         aes(x = iceland_beta_age, y = usa_beta_age, 
                             color = sig_group)) +
-    # 背景参考线
+    # Background reference lines
     geom_vline(xintercept = 0, linetype = "dashed", color = "gray60", 
                linewidth = 0.3, alpha = 0.7) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "gray60", 
                linewidth = 0.3, alpha = 0.7) +
     
-    # 绘制所有蛋白点
+    # Plot all protein points
     geom_point(alpha = 0.8, size = 1.5, shape = 16) +
     
-    # 标注top51-100蛋白
+    # Label top 51-100 proteins
     geom_text_repel(
       data = top51_100,
       aes(x = iceland_beta_age, y = usa_beta_age, label = EntrezGeneSymbol),
@@ -304,7 +304,7 @@ if (nrow(top51_100) > 0) {
       force = 1
     ) +
     
-    # 高亮显示top51-100点
+    # Highlight top 51-100 points
     geom_point(data = top51_100,
                aes(x = iceland_beta_age, y = usa_beta_age),
                color = "black",
@@ -312,7 +312,7 @@ if (nrow(top51_100) > 0) {
                shape = 1,
                stroke = 0.8) +
     
-    # 颜色方案
+    # Color scheme
     scale_color_manual(
       values = c(
         "Both sig & consistent" = "#E41A1C",
@@ -331,13 +331,13 @@ if (nrow(top51_100) > 0) {
       )
     ) +
     
-    # 坐标轴标签
+    # Axis labels
     labs(
       x = expression("Iceland β"[age]),
       y = expression("USA β"[age])
     ) +
     
-    # 主题设置
+    # Theme settings
     theme_classic() +
     theme(
       axis.title = element_text(size = font_axis, face = "bold"),
@@ -355,14 +355,14 @@ if (nrow(top51_100) > 0) {
       plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
     ) +
     
-    # 坐标轴比例
+    # Axis scale
     coord_fixed(ratio = 1) +
     xlim(min(plot_df$iceland_beta_age, na.rm = TRUE) * 1.1,
          max(plot_df$iceland_beta_age, na.rm = TRUE) * 1.1) +
     ylim(min(plot_df$usa_beta_age, na.rm = TRUE) * 1.1,
          max(plot_df$usa_beta_age, na.rm = TRUE) * 1.1) +
     
-    # 图例垂直排列
+    # Legend arranged vertically
     guides(color = guide_legend(
       ncol = 1,
       byrow = TRUE,
@@ -372,7 +372,7 @@ if (nrow(top51_100) > 0) {
       title.hjust = 0.5
     ))
   
-  # 保存top51-100图
+  # Save top 51-100 plot
   # ggsave(
   #   file.path(output_dir, "Top51_100_consistent_labeled_p0.01.pdf"),
   #   plot = p_top51_100,
@@ -393,11 +393,11 @@ if (nrow(top51_100) > 0) {
 }
 
 # ===============================
-# 8. 绘制不一致的显著蛋白图
+# 8. Plot inconsistent significant proteins
 # ===============================
 inconsistent_df <- df %>%
   filter(both_sig & !direction_consistent) %>%
-  # 为不一致的蛋白添加排序
+  # Add ranking for inconsistent proteins
   mutate(
     discordance_score = abs(iceland_beta_age - usa_beta_age),
     rank_discordance = rank(-discordance_score, ties.method = "min")
@@ -410,28 +410,28 @@ if (nrow(inconsistent_df) > 0) {
   cat("Protein count:", nrow(inconsistent_df), "\n")
   cat("Unique gene symbols:", length(unique(inconsistent_df$EntrezGeneSymbol)), "\n\n")
   
-  # 保存不一致蛋白列表
+  # Save inconsistent protein list
   write.csv(inconsistent_df,
             file.path(output_dir, "Inconsistent_significant_p0.01.csv"),
             row.names = FALSE)
   
-  # 选择前20个最不一致的进行标注
+  # Select top 20 most inconsistent for labeling
   top_inconsistent <- inconsistent_df %>% slice_min(rank_inconsistent, n = 20)
   
-  # 创建不一致蛋白图
+  # Create inconsistent protein plot
   p_inconsistent <- ggplot(plot_df, 
                           aes(x = iceland_beta_age, y = usa_beta_age, 
                               color = sig_group)) +
-    # 背景参考线
+    # Background reference lines
     geom_vline(xintercept = 0, linetype = "dashed", color = "gray60", 
                linewidth = 0.3, alpha = 0.7) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "gray60", 
                linewidth = 0.3, alpha = 0.7) +
     
-    # 绘制所有蛋白点
+    # Plot all protein points
     geom_point(alpha = 0.8, size = 1.5, shape = 16) +
     
-    # 标注不一致蛋白
+    # Label inconsistent proteins
     geom_text_repel(
       data = top_inconsistent,
       aes(x = iceland_beta_age, y = usa_beta_age, label = EntrezGeneSymbol),
@@ -446,7 +446,7 @@ if (nrow(inconsistent_df) > 0) {
       force = 1
     ) +
     
-    # 高亮显示不一致蛋白点
+    # Highlight inconsistent protein points
     geom_point(data = top_inconsistent,
                aes(x = iceland_beta_age, y = usa_beta_age),
                color = "black",
@@ -454,7 +454,7 @@ if (nrow(inconsistent_df) > 0) {
                shape = 1,
                stroke = 0.8) +
     
-    # 颜色方案
+    # Color scheme
     scale_color_manual(
       values = c(
         "Both sig & consistent" = "#E41A1C",
@@ -473,13 +473,13 @@ if (nrow(inconsistent_df) > 0) {
       )
     ) +
     
-    # 坐标轴标签
+    # Axis labels
     labs(
       x = expression("Iceland β"[age]),
       y = expression("USA β"[age])
     ) +
     
-    # 主题设置
+    # Theme settings
     theme_classic() +
     theme(
       axis.title = element_text(size = font_axis, face = "bold"),
@@ -497,14 +497,14 @@ if (nrow(inconsistent_df) > 0) {
       plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
     ) +
     
-    # 坐标轴比例
+    # Axis scale
     coord_fixed(ratio = 1) +
     xlim(min(plot_df$iceland_beta_age, na.rm = TRUE) * 1.1,
          max(plot_df$iceland_beta_age, na.rm = TRUE) * 1.1) +
     ylim(min(plot_df$usa_beta_age, na.rm = TRUE) * 1.1,
          max(plot_df$usa_beta_age, na.rm = TRUE) * 1.1) +
     
-    # 图例垂直排列
+    # Legend arranged vertically
     guides(color = guide_legend(
       ncol = 1,
       byrow = TRUE,
@@ -514,7 +514,7 @@ if (nrow(inconsistent_df) > 0) {
       title.hjust = 0.5
     ))
   
-  # 保存不一致蛋白图
+  # Save inconsistent protein plot
   # ggsave(
   #   file.path(output_dir, "Inconsistent_significant_labeled_p0.01.pdf"),
   #   plot = p_inconsistent,
@@ -535,10 +535,10 @@ if (nrow(inconsistent_df) > 0) {
 }
 
 # ===============================
-# 9. 创建汇总表格和统计报告
+# 9. Create summary table and statistical report
 # ===============================
 
-# 创建汇总统计
+# Create summary statistics
 summary_stats <- data.frame(
   Category = c("Total proteins",
                "USA significant (p<0.01)",
@@ -564,7 +564,7 @@ write.csv(summary_stats,
           file.path(output_dir, "Summary_statistics_p0.01.csv"),
           row.names = FALSE)
 
-# 打印最终汇总
+# Print final summary
 cat("========== FINAL SUMMARY (p < 0.01) ==========\n")
 print(summary_stats)
 cat("\n")

@@ -19,14 +19,14 @@ options(warn = -1)
 # ----------------------------------------------------------
 # Paths
 # ----------------------------------------------------------
-df_combined_path <- "/home/ww/Project/Protein-Composition/result/1227-result/combined_protein_analysis_results.csv"
-df_male_path <- "/home/ww/Project/Protein-Composition/result/1227-result/combined_protein_analysis_results_male.csv"
-df_female_path <- "/home/ww/Project/Protein-Composition/result/1227-result/combined_protein_analysis_results_female.csv"
-spearman_path <- "/home/ww/Project/Protein-Composition/result/1227-result-no-sex-separation/table-spearman/spearman_results.csv"
-soma_path <- "/home/ww/Project/Longi_OA/results/tony_model/soma_df_Age_Sex_F_Dataset.csv"
-anno_path <- "/home/ww/Project/AnzhenData/annoinfo_df_SOMA.csv"
+df_combined_path <- "results/1227-result/combined_protein_analysis_results.csv"
+df_male_path <- "results/1227-result/combined_protein_analysis_results_male.csv"
+df_female_path <- "results/1227-result/combined_protein_analysis_results_female.csv"
+spearman_path <- "results/1227-result-no-sex-separation/table-spearman/spearman_results.csv"
+soma_path <- "data/soma_df_Age_Sex_F_Dataset.csv"
+anno_path <- "data/annoinfo_df_SOMA.csv"
 
-out_root <- "/home/ww/Project/Protein-Composition/result/00-1-蛋白水平方差分解的统计"
+out_root <- "results/00-1-protein-variance-decomposition-statistics"
 dir.create(out_root, recursive = TRUE, showWarnings = FALSE)
 
 log_file <- file.path(out_root, "analysis_log.txt")
@@ -51,8 +51,8 @@ df_spearman <- read.csv(spearman_path, stringsAsFactors = FALSE)
 
 # Load data for trajectory plotting
 soma_df <- read.csv(soma_path, stringsAsFactors = FALSE) %>%
-  filter(Dataset %in% 1:4) %>%
-  rename(visit = Dataset)
+  filter(Visit %in% 1:4) %>%
+  rename(visit = Visit)
 
 anno_df <- read.csv(anno_path, stringsAsFactors = FALSE)
 anno_map_symbol  <- setNames(anno_df$EntrezGeneSymbol, anno_df$AptName)

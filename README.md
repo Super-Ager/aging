@@ -1,4 +1,6 @@
-This repository contains R scripts for analyzing protein expression variance decomposition using mixed-effects models based on longitudinal SomaScan 11K proteomics data and trajectory modeling.
+# Multi-Visit Longitudinal Proteomics Analysis of Aging and Longevity
+
+This repository contains R scripts for analyzing protein expression variance decomposition using mixed-effects models based on longitudinal SomaScan 11K proteomics data and trajectory modeling. Pre-computed results can be interactively accessed at [super-ager.github.io](https://super-ager.github.io).
 
 ## Scripts Overview
 
@@ -35,9 +37,31 @@ Protein trajectory modeling and survival analysis. Uses longitudinal data to pre
   - `tidyr`, `ggpubr`, `scales`, `ggrepel`, `ggalluvial`
   - `readxl`, `ggh4x`, `RColorBrewer`
 
+## Data Format
+
+The input data should be a CSV file with the following columns:
+
+- `ID`: Individual identifier
+- `age`: Age at the time of measurement
+- `Sex_F`: Sex indicator (0 = Male, 1 = Female)
+- `Visit`: Visit number
+- `seq.XXXX.XX`: Protein expression levels (one column per protein, columns starting with "seq.")
+
+### Example Data Format
+
+| ID | age | Sex_F | Visit | seq.3309.2 | seq.4374.45 | seq.1234.56 | ... |
+|----|-----|-------|-------|------------|-------------|-------------|-----|
+| 001 | 65.2 | 0 | 1 | 8.45 | 7.23 | 9.12 | ... |
+| 001 | 67.1 | 0 | 2 | 8.52 | 7.31 | 9.08 | ... |
+| 002 | 72.5 | 1 | 1 | 7.89 | 8.15 | 8.95 | ... |
+| 002 | 74.3 | 1 | 2 | 7.95 | 8.22 | 8.87 | ... |
+
 ## Usage
 
 1. Update file paths in each script to match your data locations
 2. Ensure input data files are available
 3. Run scripts sequentially or independently based on your analysis needs
 
+## Contact
+
+For questions regarding raw data and code, please contact ww20ya@163.com

@@ -13,11 +13,11 @@ options(warn = -1)
 # -------------------------------------------------------------------------
 # Paths
 # -------------------------------------------------------------------------
-soma_path <- '/home/ww/Project/Longi_OA/results/tony_model/soma_df_Age_Sex_F_Dataset.csv'
-anno_path <- '/home/ww/Project/AnzhenData/annoinfo_df_SOMA.csv'
-outcome_path <- '/home/ww/Project/Protein-Composition/data/CMCS_outcome_final.csv'
+soma_path <- 'data/soma_df_Age_Sex_F_Dataset.csv'
+anno_path <- 'data/annoinfo_df_SOMA.csv'
+outcome_path <- 'data/CMCS_outcome_final.csv'
 
-out_root <- '/home/ww/Project/Protein-Composition/result/004-longevity-target'
+out_root <- 'results/004-longevity-target'
 plot_dir <- file.path(out_root, 'plots')
 dir.create(out_root, recursive = TRUE, showWarnings = FALSE)
 dir.create(plot_dir, recursive = TRUE, showWarnings = FALSE)
@@ -27,28 +27,28 @@ dir.create(plot_dir, recursive = TRUE, showWarnings = FALSE)
 # -------------------------------------------------------------------------
 cat("Loading data...\n")
 soma_df <- read.csv(soma_path, stringsAsFactors = FALSE) %>%
-  filter(Dataset %in% c(1,2,3,4)) %>%
-  rename(visit = Dataset)
+  filter(Visit %in% c(1,2,3,4)) %>%
+  rename(visit = Visit)
 
 anno_df <- read.csv(anno_path, stringsAsFactors = FALSE)
 anno_map_symbol  <- setNames(anno_df$EntrezGeneSymbol, anno_df$AptName)
 anno_map_uniprot <- setNames(anno_df$UniProt, anno_df$AptName)
 
-# 读取死亡信息
+# Load death information
 outcome_df <- read.csv(outcome_path, stringsAsFactors = FALSE)
 
-# 只保留出现在soma_df中的ID
+# Keep only IDs present in soma_df
 outcome_df <- outcome_df %>%
   filter(ID %in% soma_df$ID)
 
-# 转换死亡日期
+# Convert death date
 death_date_original <- outcome_df$death_Date
 outcome_df$death_Date <- as.Date(outcome_df$death_Date)
 
-# 检查转换失败的数量
+# Check number of conversion failures
 conversion_failed <- !is.na(death_date_original) & death_date_original != "" & is.na(outcome_df$death_Date)
 if (sum(conversion_failed) > 0) {
-  cat(sprintf("  警告：%d 个death_Date转换失败，尝试其他格式...\n", sum(conversion_failed)))
+  cat(sprintf("  Warning: %d death_Date conversions failed, trying other formats...\n", sum(conversion_failed)))
   failed_indices <- which(conversion_failed)
   failed_dates <- death_date_original[failed_indices]
   
@@ -63,13 +63,13 @@ if (sum(conversion_failed) > 0) {
   }
 }
 
-# 最后更新日期
+# Last update date
 last_update_date <- as.Date("2024/8/21", format = "%Y/%m/%d")
 
 seqid_cols <- grep("^seq\\.", names(soma_df), value = TRUE)
-cat(sprintf("找到 %d 个seqid\n", length(seqid_cols)))
+cat(sprintf("Found %d seqids\n", length(seqid_cols)))
 
-# 获取所有ID（用于最终表格）
+# Get all IDs (for final table)
 all_ids <- unique(soma_df$ID)
 all_ids <- sort(all_ids)
 
@@ -206,32 +206,32 @@ analyze_protein_gap_survival <- function(seqid) {
   
   if (nrow(df_V2) < 10) return(NULL)
   
-  # 步骤2.1：使用visit 2计算年龄的均值和标准差（用于标准化visit 2和visit 3）
+  # Step 2.1: Calculate mean and standard deviation of age using visit 2 (for standardizing visit 2 and visit 3)
   age_mean <- mean(df_V2$age, na.rm = TRUE)
   age_sd <- sd(df_V2$age, na.rm = TRUE)
   
-  # 步骤2.2：使用上述均值和标准差对visit 2的age进行标准化
+  # Step 2.2: Standardize visit 2 age using the above mean and standard deviation
   df_V2$age_cs <- (df_V2$age - age_mean) / age_sd
   
-  # 步骤2.3：使用visit 2的数据（标准化后的age和sex）计算回归线
+  # Step 2.3: Calculate regression line using visit 2 data (standardized age and sex)
   crosssectional_model <- tryCatch({
     lm(log_expr_corrected ~ age_cs + sex, data = df_V2)
   }, error = function(e) {
-    cat(sprintf("  横断面模型拟合失败: %s\n", e$message))
+    cat(sprintf("  Cross-sectional model fitting failed: %s\n", e$message))
     return(NULL)
   })
   
   if (is.null(crosssectional_model)) return(NULL)
   
-  # 步骤2.4：计算每个人在visit 2时候距离回归线的gap（残差）
+  # Step 2.4: Calculate gap (residual) from regression line for each individual at visit 2
   df_V2$predicted_V2 <- predict(crosssectional_model, newdata = df_V2)
   df_V2$level_gap <- df_V2$log_expr_corrected - df_V2$predicted_V2
   level_gap_map <- setNames(df_V2$level_gap, df_V2$idno)
   
   # =======================================================================
-  # 步骤3：准备visit 3的数据和特征
+  # Step 3: Prepare visit 3 data and features
   # =======================================================================
-  # 提取visit 1、2、3的数据用于建模和预测
+  # Extract visit 1, 2, 3 data for modeling and prediction
   df_V1 <- df_V123 %>%
     filter(visit == 1) %>%
     select(idno, visit1_level = log_expr_corrected)
@@ -240,15 +240,15 @@ analyze_protein_gap_survival <- function(seqid) {
     filter(visit == 2) %>%
     select(idno, visit2_level = log_expr_corrected)
   
-  # 提取visit 3的数据，并使用visit 2的age均值和标准差进行标准化
+  # Extract visit 3 data and standardize using visit 2 age mean and standard deviation
   df_V3 <- df_V123 %>%
     filter(visit == 3) %>%
     select(idno, age, sex, actual_visit3 = log_expr_corrected) %>%
-    mutate(age_cs = (age - age_mean) / age_sd)  # 使用visit 2的参数标准化visit 3的age
+    mutate(age_cs = (age - age_mean) / age_sd)  # Standardize visit 3 age using visit 2 parameters
   
   if (nrow(df_V3) < 20) return(NULL)
   
-  # 合并所有特征数据（确保只使用有visit 1、2、3的个体）
+  # Merge all feature data (ensure only individuals with visit 1, 2, 3 are used)
   df_V3 <- df_V3 %>%
     left_join(df_V1, by = "idno") %>%
     left_join(df_V2_data, by = "idno") %>%
@@ -256,14 +256,14 @@ analyze_protein_gap_survival <- function(seqid) {
   
   if (nrow(df_V3) < 20) return(NULL)
   
-  # 步骤3.1：计算每个人在visit 3时候，在回归线上的数值（使用标准化后的age和sex）
+  # Step 3.1: Calculate value on regression line for each individual at visit 3 (using standardized age and sex)
   df_V3$predicted_V3_cross <- predict(crosssectional_model, newdata = df_V3)
   
-  # 步骤3.2：加上visit 2的level gap作为visit 3的预测值
+  # Step 3.2: Add visit 2 level gap as visit 3 prediction
   df_V3$level_gap <- level_gap_map[df_V3$idno]
   df_V3$predicted_visit3_cross <- df_V3$predicted_V3_cross + df_V3$level_gap
   
-  # 计算横断面模型的预测准确性
+  # Calculate cross-sectional model prediction accuracy
   cor_cross <- tryCatch({
     cor.test(df_V3$actual_visit3, df_V3$predicted_visit3_cross, use = "complete.obs")
   }, error = function(e) {
@@ -276,33 +276,33 @@ analyze_protein_gap_survival <- function(seqid) {
   ss_tot_cross <- sum((df_V3$actual_visit3 - mean(df_V3$actual_visit3, na.rm = TRUE))^2, na.rm = TRUE)
   r2_cross <- ifelse(ss_tot_cross > 0, 1 - (ss_res_cross / ss_tot_cross), NA)
   
-  # 计算横断面模型的gap
+  # Calculate cross-sectional model gap
   df_V3$gap_cross <- df_V3$actual_visit3 - df_V3$predicted_visit3_cross
   
   # =======================================================================
-  # 步骤4：Lasso预测模型（使用visit 1的水平、visit 2的水平和性别）
+  # Step 4: Lasso prediction model (using visit 1 level, visit 2 level, and sex)
   # =======================================================================
-  # 准备特征矩阵和响应变量（只使用df_V3中的个体，确保有visit 1、2、3）
-  # 特征：visit1_level, visit2_level, sex
-  # 输出：actual_visit3
+  # Prepare feature matrix and response variable (only use individuals in df_V3, ensure visit 1, 2, 3)
+  # Features: visit1_level, visit2_level, sex
+  # Output: actual_visit3
   X <- as.matrix(df_V3[, c("visit1_level", "visit2_level", "sex")])
   y <- df_V3$actual_visit3
   n_individuals <- nrow(df_V3)
   
-  # 5-fold交叉验证，按个体划分
+  # 5-fold cross-validation, split by individual
   n_folds <- 5
   fold_size <- ceiling(n_individuals / n_folds)
   
-  # 随机打乱个体顺序（但保持可重复性）
+  # Randomly shuffle individual order (but maintain reproducibility)
   set.seed(123)
   shuffled_indices <- sample(1:n_individuals)
   
-  # 初始化预测值
+  # Initialize predictions
   predicted_visit3_lasso <- rep(NA, n_individuals)
   
-  # 对每个fold进行交叉验证
+  # Cross-validation for each fold
   for (fold in 1:n_folds) {
-    # 确定测试集索引
+    # Determine test set indices
     start_idx <- (fold - 1) * fold_size + 1
     end_idx <- min(fold * fold_size, n_individuals)
     test_indices <- shuffled_indices[start_idx:end_idx]
@@ -310,40 +310,40 @@ analyze_protein_gap_survival <- function(seqid) {
     
     if (length(train_indices) < 10 || length(test_indices) < 1) next
     
-    # 准备训练集和测试集
+    # Prepare training and test sets
     X_train <- X[train_indices, , drop = FALSE]
     y_train <- y[train_indices]
     X_test <- X[test_indices, , drop = FALSE]
     
-    # 使用Lasso进行回归（alpha=1，glmnet会自动标准化）
+    # Use Lasso for regression (alpha=1, glmnet will automatically standardize)
     tryCatch({
-      # 使用Lasso（alpha=1）进行交叉验证
+      # Use Lasso (alpha=1) for cross-validation
       cv_fit <- cv.glmnet(X_train, y_train, alpha = 1, nfolds = 5)
       
-      # 预测（使用lambda.1se以提高泛化性）
+      # Predict (using lambda.1se for better generalization)
       predictions <- predict(cv_fit, newx = X_test, s = "lambda.1se")
       
-      # 保存预测值（test_indices已经是原始数据的索引）
+      # Save predictions (test_indices are already original data indices)
       if (length(test_indices) > 0 && length(predictions) > 0) {
         predicted_visit3_lasso[test_indices] <- as.numeric(predictions)
       }
       
     }, error = function(e) {
-      cat(sprintf("  Fold %d 预测失败: %s\n", fold, e$message))
+      cat(sprintf("  Fold %d prediction failed: %s\n", fold, e$message))
     })
   }
   
-  # 将预测值添加到df_V3（df_V3已经确保了有visit 1、2、3的个体）
+  # Add predictions to df_V3 (df_V3 already ensures individuals with visit 1, 2, 3)
   df_V3$predicted_visit3_linear <- predicted_visit3_lasso
   
-  # 只保留有完整预测值的个体（横断面和Lasso模型都有预测值）
+  # Keep only individuals with complete predictions (both cross-sectional and Lasso models have predictions)
   df_V3 <- df_V3 %>%
     filter(!is.na(predicted_visit3_linear) & !is.na(predicted_visit3_cross) & 
            !is.na(actual_visit3))
   
   if (nrow(df_V3) < 10) return(NULL)
   
-  # 计算Lasso模型的预测准确性
+  # Calculate Lasso model prediction accuracy
   cor_linear <- tryCatch({
     cor.test(df_V3$actual_visit3, df_V3$predicted_visit3_linear, use = "complete.obs")
   }, error = function(e) {
@@ -356,27 +356,27 @@ analyze_protein_gap_survival <- function(seqid) {
   ss_tot_linear <- sum((df_V3$actual_visit3 - mean(df_V3$actual_visit3, na.rm = TRUE))^2, na.rm = TRUE)
   r2_linear <- ifelse(ss_tot_linear > 0, 1 - (ss_res_linear / ss_tot_linear), NA)
   
-  # 计算Lasso模型的gap
+  # Calculate Lasso model gap
   df_V3$gap_linear <- df_V3$actual_visit3 - df_V3$predicted_visit3_linear
   
-  # 使用Lasso模型的预测值作为predicted_visit3_mixed（用于后续死亡分析）
+  # Use Lasso model predictions as predicted_visit3_mixed (for subsequent survival analysis)
   df_V3$predicted_visit3_mixed <- df_V3$predicted_visit3_linear
   df_V3$gap <- df_V3$gap_linear
   
-  # 标准化predicted_visit3和gap（用于死亡分析）
+  # Standardize predicted_visit3 and gap (for survival analysis)
   df_V3$predicted_visit3_sd <- as.numeric(scale(df_V3$predicted_visit3_mixed))
   df_V3$gap_sd <- as.numeric(scale(df_V3$gap))
   
   # =======================================================================
-  # 合并死亡信息（df_V3已经确保了有visit 1、2、3的个体）
+  # Merge death information (df_V3 already ensures individuals with visit 1, 2, 3)
   # =======================================================================
   df_survival <- df_V3 %>%
     left_join(outcome_df %>% select(ID, death_Date, death), by = c("idno" = "ID"))
   
   if (nrow(df_survival) < 20 || sum(df_survival$death == 1, na.rm = TRUE) < 5) return(NULL)
   
-  # 准备生存数据
-  visit3_baseline_date <- as.Date("2013-01-01")  # 根据实际情况调整
+  # Prepare survival data
+  visit3_baseline_date <- as.Date("2013-01-01")  # Adjust according to actual situation
   
   df_survival <- df_survival %>%
     mutate(
@@ -391,24 +391,24 @@ analyze_protein_gap_survival <- function(seqid) {
   
   if (nrow(df_survival) < 20) return(NULL)
   
-  # 准备协变量
+  # Prepare covariates
   df_survival$age_visit3_sd <- as.numeric(scale(df_survival$age))
   df_survival$sex_factor <- factor(df_survival$sex, levels = c(0,1), labels = c("Male","Female"))
   
-  # 初始化结果
+  # Initialize results
   result <- list(
     seqid = seqid,
     n_samples = nrow(df_survival),
     n_death = sum(df_survival$death == 1, na.rm = TRUE),
-    # 预测准确性（横断面模型）
+    # Prediction accuracy (cross-sectional model)
     cross_cor_r = cor_cross_r,
     cross_cor_p = cor_cross_p,
     cross_r2 = r2_cross,
-    # 预测准确性（线性模型）
+    # Prediction accuracy (linear model)
     linear_cor_r = cor_linear_r,
     linear_cor_p = cor_linear_p,
     linear_r2 = r2_linear,
-    # 模型结果
+    # Model results
     base_model_r2 = NA,
     base_model_cindex = NA,
     base_model_cindex_ci_lower = NA,
@@ -425,35 +425,35 @@ analyze_protein_gap_survival <- function(seqid) {
     gap_p = NA
   )
   
-  # 拟合模型并计算指标
+  # Fit models and calculate metrics
   tryCatch({
-    # 确保数据没有NA值
+    # Ensure data has no NA values
     df_model <- df_survival %>%
       select(time, event, age_visit3_sd, sex_factor, predicted_visit3_sd, gap_sd) %>%
       filter(!is.na(time) & !is.na(event) & !is.na(age_visit3_sd) & 
              !is.na(sex_factor) & !is.na(predicted_visit3_sd))
     
     if (nrow(df_model) < 20 || sum(df_model$event) < 5) {
-      stop("数据不足或事件数太少")
+      stop("Insufficient data or too few events")
     }
     
-    # 基准模型：age + sex + predicted_visit3
+    # Base model: age + sex + predicted_visit3
     base_model <- coxph(
       Surv(time, event) ~ age_visit3_sd + sex_factor + predicted_visit3_sd,
       data = df_model
     )
     
-    # 完整模型：age + sex + predicted_visit3 + gap
+    # Full model: age + sex + predicted_visit3 + gap
     full_model <- coxph(
       Surv(time, event) ~ age_visit3_sd + sex_factor + predicted_visit3_sd + gap_sd,
       data = df_model
     )
     
-    # 计算R²
+    # Calculate R²
     result$base_model_r2 <- calculate_cox_r2(base_model)
     result$full_model_r2 <- calculate_cox_r2(full_model)
     
-    # 计算C-index及其置信区间
+    # Calculate C-index and its confidence interval
     base_cindex <- calculate_cindex_ci(base_model)
     result$base_model_cindex <- base_cindex$cindex
     result$base_model_cindex_ci_lower <- base_cindex$ci_lower
@@ -469,7 +469,7 @@ analyze_protein_gap_survival <- function(seqid) {
     result$lrt_chisq <- lrt$Chisq[2]
     result$lrt_p <- lrt$`Pr(>|Chi|)`[2]
     
-    # 提取gap的HR及其置信区间
+    # Extract HR of gap and its confidence interval
     gap_coef <- summary(full_model)$coefficients["gap_sd", ]
     result$gap_hr <- exp(gap_coef["coef"])
     result$gap_hr_ci_lower <- exp(gap_coef["coef"] - 1.96 * gap_coef["se(coef)"])
@@ -477,16 +477,16 @@ analyze_protein_gap_survival <- function(seqid) {
     result$gap_p <- gap_coef["Pr(>|z|)"]
     
   }, error = function(e) {
-    cat(sprintf("  模型拟合错误: %s\n", e$message))
+    cat(sprintf("  Model fitting error: %s\n", e$message))
   })
   
-  # 准备预测值表格数据
+  # Prepare prediction table data
   prediction_df <- data.frame(
     idno = all_ids,
     stringsAsFactors = FALSE
   )
   
-  # 为当前蛋白添加三列
+  # Add three columns for current protein
   col_actual <- paste0(seqid, "_actual")
   col_mixed <- paste0(seqid, "_mixed")
   col_cross <- paste0(seqid, "_cross")
@@ -495,7 +495,7 @@ analyze_protein_gap_survival <- function(seqid) {
   prediction_df[[col_mixed]] <- NA
   prediction_df[[col_cross]] <- NA
   
-  # 填充有数据的个体（df_V3已经确保了有visit 1、2、3和完整预测值）
+  # Fill individuals with data (df_V3 already ensures visit 1, 2, 3 and complete predictions)
   for (i in seq_len(nrow(df_V3))) {
     idx <- which(prediction_df$idno == df_V3$idno[i])
     if (length(idx) == 1) {
@@ -505,7 +505,7 @@ analyze_protein_gap_survival <- function(seqid) {
     }
   }
   
-  # 返回结果和预测值表格
+  # Return results and prediction table
   return(list(
     result = data.frame(result, stringsAsFactors = FALSE),
     prediction = prediction_df
@@ -513,21 +513,21 @@ analyze_protein_gap_survival <- function(seqid) {
 }
 
 # -------------------------------------------------------------------------
-# 主程序：并行分析
+# Main program: Parallel analysis
 # -------------------------------------------------------------------------
-cat("开始轨迹建模和死亡分析...\n")
-cat(sprintf("总共需要分析 %d 个seqid\n", length(seqid_cols)))
+cat("Starting trajectory modeling and survival analysis...\n")
+cat(sprintf("Total of %d seqids to analyze\n", length(seqid_cols)))
 
-# 测试代码：只分析指定的seqid
+# Test code: analyze only specified seqids
 # seqid_cols <- c("seq.4374.45")
 # seqid_cols <- seqid_cols[1:10]
 
-# 设置并行计算
+# Set parallel computation
 n_cores <- 14
-cat(sprintf("使用 %d 个核心进行并行计算...\n", n_cores))
+cat(sprintf("Using %d cores for parallel computation...\n", n_cores))
 
-# 使用mclapply进行并行计算
-cat("开始并行分析...\n")
+# Use mclapply for parallel computation
+cat("Starting parallel analysis...\n")
 result_lists <- mclapply(seq_along(seqid_cols), function(i) {
   seqid <- seqid_cols[i]
   
@@ -537,15 +537,15 @@ result_lists <- mclapply(seq_along(seqid_cols), function(i) {
     return(NULL)
   })
   
-  # 每100个输出一次进度
+  # Output progress every 100
   if (i %% 100 == 0) {
-    cat(sprintf("进度: %d/%d (%.1f%%)\n", i, length(seqid_cols), 100 * i / length(seqid_cols)))
+    cat(sprintf("Progress: %d/%d (%.1f%%)\n", i, length(seqid_cols), 100 * i / length(seqid_cols)))
   }
   
   return(result_list)
 }, mc.cores = n_cores)
 
-# 处理结果
+# Process results
 res <- list()
 prediction_tables <- list()
 
@@ -556,21 +556,21 @@ for (i in seq_along(result_lists)) {
     next
   }
   
-  # 检查结果是否有效
+  # Check if results are valid
   if (is.null(result_list$result) || !is.data.frame(result_list$result)) {
     next
   }
   
-  # 保存结果
+  # Save results
   res[[i]] <- result_list$result
   
-  # 保存预测值表格（第一次需要初始化，后续需要合并）
+  # Save prediction table (initialize first time, merge subsequent times)
   if (!is.null(result_list$prediction) && is.data.frame(result_list$prediction)) {
     if (length(prediction_tables) == 0 || is.null(prediction_tables[[1]])) {
       prediction_tables[[1]] <- result_list$prediction
     } else {
-      # 合并新列
-      new_cols <- result_list$prediction[, -1, drop = FALSE]  # 排除idno列
+      # Merge new columns
+      new_cols <- result_list$prediction[, -1, drop = FALSE]  # Exclude idno column
       if (ncol(new_cols) > 0) {
         prediction_tables[[1]] <- cbind(prediction_tables[[1]], new_cols)
       }
@@ -579,27 +579,27 @@ for (i in seq_along(result_lists)) {
 }
 
 if (length(res) == 0) {
-  cat("没有有效结果\n")
-  stop("没有有效结果")
+  cat("No valid results\n")
+  stop("No valid results")
 }
 
-# 移除NULL结果
+# Remove NULL results
 res <- res[!sapply(res, is.null)]
 
 survival_df <- do.call(rbind, res)
-cat(sprintf("\n最终保存的结果: %d 行 x %d 列\n", nrow(survival_df), ncol(survival_df)))
+cat(sprintf("\nFinal saved results: %d rows x %d columns\n", nrow(survival_df), ncol(survival_df)))
 
-# 保存结果
+# Save results
 output_path <- file.path(out_root, "protein_gap_survival_results.csv")
 write.csv(survival_df, output_path, row.names = FALSE)
-cat(sprintf("结果已保存到: %s\n", output_path))
+cat(sprintf("Results saved to: %s\n", output_path))
 
-# 保存预测值表格
+# Save prediction table
 prediction_path <- file.path(out_root, "protein_visit3_predictions.csv")
 if (length(prediction_tables) > 0 && !is.null(prediction_tables[[1]])) {
   prediction_final <- prediction_tables[[1]]
   
-  # 将NA替换为NaN（用于Python兼容性）
+  # Replace NA with NaN (for Python compatibility)
   for (col in names(prediction_final)) {
     if (col != "idno") {
       prediction_final[[col]][is.na(prediction_final[[col]])] <- NaN
@@ -607,52 +607,52 @@ if (length(prediction_tables) > 0 && !is.null(prediction_tables[[1]])) {
   }
   
   write.csv(prediction_final, prediction_path, row.names = FALSE)
-  cat(sprintf("预测值表格已保存到: %s\n", prediction_path))
+  cat(sprintf("Prediction table saved to: %s\n", prediction_path))
 }
 
 # -------------------------------------------------------------------------
-# 绘制linear模型预测值和真实值的散点图（针对Filtered_Proteins）
+# Plot scatter plots of linear model predictions vs actual values (for Filtered_Proteins)
 # -------------------------------------------------------------------------
 cat("\n========================================\n")
-cat("绘制linear模型预测准确性散点图\n")
+cat("Plotting linear model prediction accuracy scatter plots\n")
 cat("========================================\n\n")
 
-# 读取Filtered_Proteins_VarianceDecomposition
-variance_decomp_path <- '/home/ww/Project/Protein-Composition/result/001-横断面衰老marker的检测/Filtered_Proteins_VarianceDecomposition.csv'
+# Read Filtered_Proteins_VarianceDecomposition
+variance_decomp_path <- 'results/001-cross-sectional-aging-marker-detection/Filtered_Proteins_VarianceDecomposition.csv'
 if (file.exists(variance_decomp_path)) {
-  cat("正在读取Filtered_Proteins_VarianceDecomposition...\n")
+  cat("Reading Filtered_Proteins_VarianceDecomposition...\n")
   variance_df <- read.csv(variance_decomp_path, stringsAsFactors = FALSE)
   
-  # 检查seq_id列名（可能是seq_id或seqid）
+  # Check seq_id column name (may be seq_id or seqid)
   seq_id_col <- if ("seq_id" %in% names(variance_df)) "seq_id" else "seqid"
   filtered_seqids <- unique(variance_df[[seq_id_col]])
-  cat(sprintf("  找到 %d 个筛选的蛋白\n", length(filtered_seqids)))
+  cat(sprintf("  Found %d filtered proteins\n", length(filtered_seqids)))
   
-  # 创建散点图输出目录
+  # Create scatter plot output directory
   scatter_plot_dir <- file.path(out_root, "linear_prediction_scatter_plots")
   dir.create(scatter_plot_dir, recursive = TRUE, showWarnings = FALSE)
-  cat(sprintf("  散点图将保存到: %s\n", scatter_plot_dir))
+  cat(sprintf("  Scatter plots will be saved to: %s\n", scatter_plot_dir))
   
-  # 读取预测值表格
+  # Read prediction table
   if (file.exists(prediction_path)) {
-    cat("正在读取预测值表格...\n")
+    cat("Reading prediction table...\n")
     prediction_df <- read.csv(prediction_path, stringsAsFactors = FALSE)
-    cat(sprintf("  预测值表格: %d 行 x %d 列\n", nrow(prediction_df), ncol(prediction_df)))
+    cat(sprintf("  Prediction table: %d rows x %d columns\n", nrow(prediction_df), ncol(prediction_df)))
     
-    # 读取生存分析结果获取pearson_r
+    # Read survival analysis results to get pearson_r
     if (file.exists(output_path)) {
-      cat("正在读取生存分析结果...\n")
+      cat("Reading survival analysis results...\n")
       survival_results <- read.csv(output_path, stringsAsFactors = FALSE)
       
-      # 为每个筛选的蛋白绘制散点图
+      # Plot scatter plots for each filtered protein
       plot_count <- 0
       for (seqid in filtered_seqids) {
-        # 检查是否有对应的列
+        # Check if corresponding columns exist
         col_actual <- paste0(seqid, "_actual")
         col_mixed <- paste0(seqid, "_mixed")
         
         if (col_actual %in% names(prediction_df) && col_mixed %in% names(prediction_df)) {
-          # 提取实际值和预测值
+          # Extract actual and predicted values
           plot_data <- prediction_df %>%
             select(idno, actual = all_of(col_actual), predicted = all_of(col_mixed)) %>%
             filter(!is.na(actual) & !is.na(predicted) & 
@@ -660,7 +660,7 @@ if (file.exists(variance_decomp_path)) {
                    is.finite(actual) & is.finite(predicted))
           
           if (nrow(plot_data) >= 10) {
-            # 计算pearson相关系数
+            # Calculate Pearson correlation coefficient
             pearson_r <- tryCatch({
               cor_result <- cor.test(plot_data$actual, plot_data$predicted, use = "complete.obs")
               cor_result$estimate
@@ -668,28 +668,28 @@ if (file.exists(variance_decomp_path)) {
               NA
             })
             
-            # 如果survival_results中有，使用那里的值
+            # If available in survival_results, use that value
             if (seqid %in% survival_results$seqid) {
               pearson_r <- survival_results$linear_cor_r[survival_results$seqid == seqid][1]
             }
             
-            # 获取gene_symbol
+            # Get gene_symbol
             gene_symbol <- if (seqid %in% names(anno_map_symbol)) {
               anno_map_symbol[seqid]
             } else {
               seqid
             }
             
-            # 如果gene_symbol为空或NA，使用seqid
+            # If gene_symbol is empty or NA, use seqid
             if (is.na(gene_symbol) || gene_symbol == "" || is.null(gene_symbol)) {
               gene_symbol <- seqid
             }
             
-            # 绘制散点图
+            # Plot scatter plot
             scatter_plot <- ggplot(plot_data, aes(x = actual, y = predicted)) +
               geom_point(color = "#E74C3C", alpha = 0.6, size = 1.5) +
               geom_abline(intercept = 0, slope = 1, color = "#2C3E50", linetype = "dashed", linewidth = 0.8, alpha = 0.8) +
-              # 添加pearson_r标注
+              # Add pearson_r annotation
               annotate("text", 
                        x = Inf, y = -Inf, 
                        label = sprintf("Pearson r = %.3f", ifelse(is.na(pearson_r), 0, pearson_r)),
@@ -713,7 +713,7 @@ if (file.exists(variance_decomp_path)) {
                 panel.background = element_rect(fill = "white", color = NA)
               )
             
-            # 保存图片
+            # Save plot
             plot_filename <- sprintf("%s_%s_scatter.png", 
                                     gsub("[^A-Za-z0-9]", "_", gene_symbol),
                                     gsub("\\.", "_", seqid))
@@ -730,21 +730,21 @@ if (file.exists(variance_decomp_path)) {
             
             plot_count <- plot_count + 1
             if (plot_count %% 50 == 0) {
-              cat(sprintf("  已绘制 %d 个散点图...\n", plot_count))
+              cat(sprintf("  Plotted %d scatter plots...\n", plot_count))
             }
           }
         }
       }
       
-      cat(sprintf("\n✅ 共绘制 %d 个散点图，已保存到: %s\n", plot_count, scatter_plot_dir))
+      cat(sprintf("\n✅ Total of %d scatter plots plotted, saved to: %s\n", plot_count, scatter_plot_dir))
     } else {
-      cat("  警告：未找到生存分析结果文件，无法获取pearson_r\n")
+      cat("  Warning: Survival analysis results file not found, cannot get pearson_r\n")
     }
   } else {
-    cat("  警告：未找到预测值表格文件\n")
+    cat("  Warning: Prediction table file not found\n")
   }
 } else {
-  cat(sprintf("  警告：未找到Filtered_Proteins_VarianceDecomposition文件: %s\n", variance_decomp_path))
+  cat(sprintf("  Warning: Filtered_Proteins_VarianceDecomposition file not found: %s\n", variance_decomp_path))
 }
 
-cat("完成！\n")
+cat("Completed!\n")
